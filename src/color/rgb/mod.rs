@@ -1,3 +1,7 @@
+pub type RGB8 = RGB<u8>;
+pub type RGB32 = RGB<f32>;
+pub type RGB64 = RGB<f64>;
+
 #[repr(C)]
 #[derive(Default, Debug, Clone, Copy)]
 pub struct RGB<T = u8> {
@@ -21,6 +25,22 @@ impl RGB {
 
     pub fn byte_to_percent64(byte: u8) -> f64 {
         byte as f64 / 255_f64
+    }
+}
+
+impl<T: PartialEq> PartialEq for RGB<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.r == other.r && self.g == other.g && self.b == other.b
+    }
+}
+
+impl<T: Copy> From<[T; 3]> for RGB<T> {
+    fn from(src: [T; 3]) -> Self {
+        Self {
+            r: src[0],
+            g: src[1],
+            b: src[2],
+        }
     }
 }
 
@@ -54,5 +74,20 @@ mod tests {
         let byte: u8 = 0;
         let percent: f64 = RGB::byte_to_percent64(byte);
         assert_eq!(percent, 0.0);
+    }
+
+    #[test]
+    fn partial_eq() {
+        let rgb1 = RGB::from([1.0, 1.0, 1.0]);
+        let rgb2 = RGB::from([1.0, 1.0, 1.0]);
+        assert_eq!(rgb1, rgb2);
+        let rgb2 = RGB::from([0.0, 1.0, 1.0]);
+        assert_ne!(rgb1, rgb2);
+        let rgb2 = RGB::from([1.0, 0.0, 1.0]);
+        assert_ne!(rgb1, rgb2);
+        let rgb2 = RGB::from([1.0, 1.0, 0.0]);
+        assert_ne!(rgb1, rgb2);
+        let rgb2 = RGB::from([0.0, 0.0, 0.0]);
+        assert_ne!(rgb1, rgb2);
     }
 }
