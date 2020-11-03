@@ -1,0 +1,14 @@
+/examples/tmp.rs
+/tmp.*
+
+/Cargo.lock
+/target
+
+#vscode
+/.vscode
+
+#vs
+/.vs
+
+#idea
+/.idea
