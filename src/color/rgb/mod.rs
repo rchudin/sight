@@ -1,3 +1,7 @@
+mod rgb32;
+mod rgb64;
+mod rgb8;
+
 pub type RGB8 = RGB<u8>;
 pub type RGB32 = RGB<f32>;
 pub type RGB64 = RGB<f64>;
