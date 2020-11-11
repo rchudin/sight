@@ -86,6 +86,10 @@ impl<T: Copy> Buffer<T> {
             transpose(self.width, &mut self.buffer);
             std::mem::swap(&mut self.width, &mut self.height);
         }
+        for x in 0..self.height {
+            let first = index2d_to_index(self.width, 0, x);
+            self.buffer[first..first + self.width as usize].reverse()
+        }
     }
 }
 
@@ -305,5 +309,56 @@ mod tests {
         assert_eq!(index, img.buffer.len() - 1);
         let (x, y) = img.index_to_index2d(index);
         assert_eq!((x, y), (599, 599));
+    }
+
+    #[test]
+    fn rotate90_square() {
+        let width: u32 = 20;
+        let height: u32 = 20;
+        let mut img: Buffer<RGB8> = Buffer::new(width, height, RGB8::from([0, 0, 0])).unwrap();
+        let color = RGB8::from([255, 0, 0]);
+        img[0] = color;
+        assert_eq!(img[0], color);
+
+        img.rotate90();
+        assert_eq!(img[index2d_to_index(width, width - 1, 0)], color);
+
+        img.rotate90();
+        assert_eq!(img[index2d_to_index(width, width - 1, height - 1)], color);
+
+        img.rotate90();
+        assert_eq!(img[index2d_to_index(width, 0, height - 1)], color);
+
+        img.rotate90();
+        assert_eq!(img[index2d_to_index(width, 0, 0)], color);
+    }
+
+    #[test]
+    fn rotate90() {
+        let mut img: Buffer<RGB8> = Buffer::new(450, 20, RGB8::from([255, 255, 255])).unwrap();
+        let color = RGB8::from([0, 255, 0]);
+        img[0] = color;
+        assert_eq!(img[0], color);
+
+        img.rotate90();
+        assert_eq!(
+            img[index2d_to_index(img.width(), img.width() - 1, 0)],
+            color
+        );
+
+        img.rotate90();
+        assert_eq!(
+            img[index2d_to_index(img.width(), img.width() - 1, img.height() - 1)],
+            color
+        );
+
+        img.rotate90();
+        assert_eq!(
+            img[index2d_to_index(img.width(), 0, img.height() - 1)],
+            color
+        );
+
+        img.rotate90();
+        assert_eq!(img[index2d_to_index(img.width(), 0, 0)], color);
     }
 }
