@@ -1,4 +1,8 @@
-use super::ComponentsRaw;
+use super::{
+    math::{index2d_to_index, index_to_index2d},
+    rotate::{rotate90, rotate90_square},
+    ComponentsRaw,
+};
 use crate::{
     color::{rgb::RGB, HSL, RGB32, RGB64, RGB8},
     error::IncorrectData,
@@ -9,13 +13,13 @@ use std::{
     slice::SliceIndex,
 };
 
-pub struct Buffer<T> {
+pub struct Buffer<T: Copy> {
     width: u32,
     height: u32,
     buffer: Vec<T>,
 }
 
-impl<T: Clone> Buffer<T> {
+impl<T: Copy> Buffer<T> {
     pub fn new(width: u32, height: u32, color: T) -> Result<Self, IncorrectData> {
         let capacity = width as usize * height as usize;
         if let None = capacity.checked_mul(std::mem::size_of::<T>()) {
@@ -31,9 +35,7 @@ impl<T: Clone> Buffer<T> {
             buffer: vec![color; capacity],
         })
     }
-}
 
-impl<T> Buffer<T> {
     pub fn from_vec(width: u32, height: u32, buffer: Vec<T>) -> Result<Self, IncorrectData> {
         let expected = width as usize * height as usize;
 
@@ -53,29 +55,41 @@ impl<T> Buffer<T> {
         })
     }
 
+    #[inline]
     pub fn width(&self) -> u32 {
         self.width
     }
 
+    #[inline]
     pub fn height(&self) -> u32 {
         self.height
     }
 
+    #[inline]
     pub fn index2d_to_index(&self, x: u32, y: u32) -> usize {
         assert!(x < self.width);
         assert!(y < self.height);
-        self.width as usize * y as usize + x as usize
+        index2d_to_index(self.width, x, y)
     }
 
+    #[inline]
     pub fn index_to_index2d(&self, index: usize) -> (u32, u32) {
         assert!(index < self.buffer.len());
-        let x = index % self.width as usize;
-        let y = (index - x) / self.width as usize;
-        (x as u32, y as u32)
+        index_to_index2d(self.width, index)
+    }
+
+    #[inline]
+    pub fn rotate90(&mut self) {
+        if self.width == self.height {
+            rotate90_square(self.width, &mut self.buffer)
+        } else {
+            rotate90(self.width, &mut self.buffer);
+            std::mem::swap(&mut self.width, &mut self.height);
+        }
     }
 }
 
-impl<T> Deref for Buffer<T> {
+impl<T: Copy> Deref for Buffer<T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -83,7 +97,7 @@ impl<T> Deref for Buffer<T> {
     }
 }
 
-impl<T, I: SliceIndex<[T]>> Index<I> for Buffer<T> {
+impl<T: Copy, I: SliceIndex<[T]>> Index<I> for Buffer<T> {
     type Output = I::Output;
 
     fn index(&self, index: I) -> &Self::Output {
@@ -91,13 +105,13 @@ impl<T, I: SliceIndex<[T]>> Index<I> for Buffer<T> {
     }
 }
 
-impl<T, I: SliceIndex<[T]>> IndexMut<I> for Buffer<T> {
+impl<T: Copy, I: SliceIndex<[T]>> IndexMut<I> for Buffer<T> {
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         &mut self.buffer[index]
     }
 }
 
-impl<T> ComponentsRaw for Buffer<RGB<T>> {
+impl<T: Copy> ComponentsRaw for Buffer<RGB<T>> {
     type Output = T;
 
     fn raw(&self) -> &[Self::Output] {
