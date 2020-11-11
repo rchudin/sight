@@ -19,7 +19,7 @@ fn mandelbrot_red_black(x: u32, y: u32, width: u32, height: u32) -> RGB8 {
     }
 
     if nb_iter < 34 {
-        RGB8::from([255, 0, 0])
+        RGB8::from([(255 * nb_iter / 33) as u8, 0, 0])
     } else {
         RGB8::from([0, 0, 0])
     }
