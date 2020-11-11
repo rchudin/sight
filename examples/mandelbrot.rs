@@ -26,7 +26,7 @@ fn mandelbrot_red_black(x: u32, y: u32, width: u32, height: u32) -> RGB8 {
 }
 
 fn main() {
-    let width: u32 = 600;
+    let width: u32 = 550;
     let height: u32 = 600;
 
     let mut img: Buffer<RGB8> = Buffer::new(width, height, RGB8::from([255, 0, 0])).unwrap();
@@ -37,6 +37,8 @@ fn main() {
             img[index] = mandelbrot_red_black(x, y, width, height);
         }
     }
+
+    img.rotate90();
 
     image::save_buffer_with_format(
         "tmp.png",
