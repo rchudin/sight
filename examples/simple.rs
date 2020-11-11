@@ -1,5 +1,3 @@
-extern crate sight;
-
 use sight::{
     color::{HSL, RGB8},
     display::{Buffer, ComponentsRaw},

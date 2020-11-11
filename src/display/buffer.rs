@@ -60,6 +60,19 @@ impl<T> Buffer<T> {
     pub fn height(&self) -> u32 {
         self.height
     }
+
+    pub fn index2d_to_index(&self, x: u32, y: u32) -> usize {
+        assert!(x < self.width);
+        assert!(y < self.height);
+        self.width as usize * y as usize + x as usize
+    }
+
+    pub fn index_to_index2d(&self, index: usize) -> (u32, u32) {
+        assert!(index < self.buffer.len());
+        let x = index % self.width as usize;
+        let y = (index - x) / self.width as usize;
+        (x as u32, y as u32)
+    }
 }
 
 impl<T> Deref for Buffer<T> {
@@ -251,5 +264,32 @@ mod tests {
         for x in raw {
             assert!(x == color);
         }
+    }
+
+    #[test]
+    fn index2d() {
+        let width: u32 = 600;
+        let height: u32 = 600;
+        let img: Buffer<RGB8> = Buffer::new(width, height, RGB8::from([0, 0, 0])).unwrap();
+
+        let index = img.index2d_to_index(0, 0);
+        assert_eq!(index, 0);
+        let (x, y) = img.index_to_index2d(index);
+        assert_eq!((x, y), (0, 0));
+
+        let index = img.index2d_to_index(width - 1, 0);
+        assert_eq!(index, width as usize - 1);
+        let (x, y) = img.index_to_index2d(index);
+        assert_eq!((x, y), (width - 1, 0));
+
+        let index = img.index2d_to_index(0, height - 1);
+        assert_eq!(index, (height - 1) as usize * height as usize);
+        let (x, y) = img.index_to_index2d(index);
+        assert_eq!((x, y), (0, height - 1));
+
+        let index = img.index2d_to_index(599, 599);
+        assert_eq!(index, img.buffer.len() - 1);
+        let (x, y) = img.index_to_index2d(index);
+        assert_eq!((x, y), (599, 599));
     }
 }
