@@ -1,6 +1,6 @@
 use super::{
     math::{index2d_to_index, index_to_index2d},
-    rotate::{rotate90, rotate90_square},
+    transpose::{transpose, transpose_square},
     ComponentsRaw,
 };
 use crate::{
@@ -81,9 +81,9 @@ impl<T: Copy> Buffer<T> {
     #[inline]
     pub fn rotate90(&mut self) {
         if self.width == self.height {
-            rotate90_square(self.width, &mut self.buffer)
+            transpose_square(self.width, &mut self.buffer)
         } else {
-            rotate90(self.width, &mut self.buffer);
+            transpose(self.width, &mut self.buffer);
             std::mem::swap(&mut self.width, &mut self.height);
         }
     }

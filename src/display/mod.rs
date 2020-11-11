@@ -1,6 +1,6 @@
 mod buffer;
 pub(crate) mod math;
-pub(crate) mod rotate;
+pub(crate) mod transpose;
 
 pub use self::buffer::Buffer;
 
