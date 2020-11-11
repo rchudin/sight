@@ -6,8 +6,8 @@ pub type RGB8 = RGB<u8>;
 pub type RGB32 = RGB<f32>;
 pub type RGB64 = RGB<f64>;
 
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-#[derive(Default, Debug, Clone, Copy)]
 pub struct RGB<T> {
     pub r: T,
     pub g: T,
@@ -29,12 +29,6 @@ impl<T> RGB<T> {
 
     pub fn byte_to_percent64(byte: u8) -> f64 {
         byte as f64 / 255_f64
-    }
-}
-
-impl<T: PartialEq> PartialEq for RGB<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.r == other.r && self.g == other.g && self.b == other.b
     }
 }
 
