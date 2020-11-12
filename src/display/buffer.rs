@@ -67,15 +67,29 @@ impl<T: Copy> Buffer<T> {
 
     #[inline]
     pub fn index2d_to_index(&self, x: u32, y: u32) -> usize {
-        assert!(x < self.width);
-        assert!(y < self.height);
+        debug_assert!(x < self.width);
+        debug_assert!(y < self.height);
         index2d_to_index(self.width, x, y)
     }
 
     #[inline]
     pub fn index_to_index2d(&self, index: usize) -> (u32, u32) {
-        assert!(index < self.buffer.len());
+        debug_assert!(index < self.buffer.len());
         index_to_index2d(self.width, index)
+    }
+
+    #[inline]
+    pub fn flip_vertically(&mut self) {
+        for x in 0..self.height {
+            let first = index2d_to_index(self.width, 0, x);
+            self.buffer[first..first + self.width as usize].reverse()
+        }
+    }
+
+    #[inline]
+    pub fn flip_horizontally(&mut self) {
+        self.buffer.reverse();
+        self.flip_vertically();
     }
 
     #[inline]
@@ -86,10 +100,7 @@ impl<T: Copy> Buffer<T> {
             transpose(self.width, &mut self.buffer);
             std::mem::swap(&mut self.width, &mut self.height);
         }
-        for x in 0..self.height {
-            let first = index2d_to_index(self.width, 0, x);
-            self.buffer[first..first + self.width as usize].reverse()
-        }
+        self.flip_vertically();
     }
 }
 
@@ -360,5 +371,59 @@ mod tests {
 
         img.rotate90();
         assert_eq!(img[index2d_to_index(img.width(), 0, 0)], color);
+    }
+
+    #[test]
+    fn flip_vertically() {
+        let mut buffer: Buffer<RGB8> = Buffer::new(21, 21, RGB8::from([0, 0, 0])).unwrap();
+        let color1 = RGB8::from([255, 0, 0]);
+        let color2 = RGB8::from([0, 255, 0]);
+        let color3 = RGB8::from([0, 0, 255]);
+        buffer[0] = color1;
+        let len = buffer.len();
+        buffer[len - 1] = color2;
+        let index = index2d_to_index(buffer.width(), buffer.width() / 2, buffer.height() / 2);
+        buffer[index] = color3;
+
+        buffer.flip_vertically();
+        assert_eq!(
+            buffer[index2d_to_index(buffer.width(), buffer.width() - 1, 0)],
+            color1
+        );
+        assert_eq!(
+            buffer[index2d_to_index(buffer.width(), 0, buffer.height() - 1)],
+            color2
+        );
+        assert_eq!(
+            buffer[index2d_to_index(buffer.width(), buffer.width() / 2, buffer.height() / 2)],
+            color3
+        );
+    }
+
+    #[test]
+    fn flip_horizontally() {
+        let mut buffer: Buffer<RGB8> = Buffer::new(43, 43, RGB8::from([0, 0, 0])).unwrap();
+        let color1 = RGB8::from([255, 0, 0]);
+        let color2 = RGB8::from([0, 255, 0]);
+        let color3 = RGB8::from([0, 0, 255]);
+        buffer[0] = color1;
+        let len = buffer.len();
+        buffer[len - 1] = color2;
+        let index = index2d_to_index(buffer.width(), buffer.width() / 2, buffer.height() / 2);
+        buffer[index] = color3;
+
+        buffer.flip_horizontally();
+        assert_eq!(
+            buffer[index2d_to_index(buffer.width(), 0, buffer.height() - 1)],
+            color1
+        );
+        assert_eq!(
+            buffer[index2d_to_index(buffer.width(), buffer.width() - 1, 0)],
+            color2
+        );
+        assert_eq!(
+            buffer[index2d_to_index(buffer.width(), buffer.width() / 2, buffer.height() / 2)],
+            color3
+        );
     }
 }
