@@ -1,12 +1,18 @@
+pub(crate) mod transpose;
+
+/// index = side * y + x
 #[inline]
-pub(crate) fn index2d_to_index(width: u32, x: u32, y: u32) -> usize {
-    width as usize * y as usize + x as usize
+pub(crate) fn index2d_to_index(side: u32, x: u32, y: u32) -> usize {
+    side as usize * y as usize + x as usize
 }
 
+/// x = index % side
+///
+/// y = (idex - x) / side
 #[inline]
-pub(crate) fn index_to_index2d(width: u32, index: usize) -> (u32, u32) {
-    let x = index % width as usize;
-    let y = (index - x) / width as usize;
+pub(crate) fn index_to_index2d(side: u32, index: usize) -> (u32, u32) {
+    let x = index % side as usize;
+    let y = (index - x) / side as usize;
     (x as u32, y as u32)
 }
 

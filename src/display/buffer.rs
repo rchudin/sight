@@ -1,11 +1,11 @@
-use super::{
-    math::{index2d_to_index, index_to_index2d},
-    transpose::{transpose, transpose_square},
-    ComponentsRaw,
-};
+use super::ComponentsRaw;
 use crate::{
     color::{rgb::RGB, HSL, RGB32, RGB64, RGB8},
     error::IncorrectData,
+    math::{
+        index2d_to_index, index_to_index2d,
+        transpose::{transpose, transpose_square},
+    },
 };
 use std::{
     ops::{Deref, Index, IndexMut},
@@ -97,7 +97,7 @@ impl<T: Copy> Buffer<T> {
         if self.width == self.height {
             transpose_square(self.width, &mut self.buffer)
         } else {
-            transpose(self.width, &mut self.buffer);
+            transpose(self.width, self.height, &mut self.buffer);
             std::mem::swap(&mut self.width, &mut self.height);
         }
         self.flip_vertically();

@@ -1,17 +1,13 @@
 use super::{rgb_hsl::rgb_to_hsl, Convert, RGB32, RGB64, RGB8};
 
-// Hue | Saturation | Lightness
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct HSL {
+    /// Hue
     pub h: f64,
+    /// Saturation
     pub s: f64,
+    /// Lightness
     pub l: f64,
-}
-
-impl PartialEq for HSL {
-    fn eq(&self, other: &Self) -> bool {
-        self.h == other.h && self.s == other.s && self.l == other.l
-    }
 }
 
 impl Convert for HSL {
