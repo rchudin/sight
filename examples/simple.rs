@@ -1,6 +1,6 @@
 use sight::{
     color::{HSL, RGB8},
-    display::{Buffer, ComponentsRaw},
+    display::{ComponentsRaw, Image},
 };
 
 fn main() {
@@ -15,7 +15,7 @@ fn main() {
             buff.push(HSL { h, s: 1.0, l: 0.5 })
         }
     }
-    let img: Buffer<RGB8> = Buffer::from_vec(width, height, buff).unwrap().into();
+    let img: Image<RGB8> = Image::from_vec(width, height, buff).unwrap().into();
 
     image::save_buffer_with_format(
         "tmp.png",

@@ -13,13 +13,13 @@ use std::{
     slice::SliceIndex,
 };
 
-pub struct Buffer<T: Copy> {
+pub struct Image<T: Copy> {
     width: u32,
     height: u32,
     buffer: Vec<T>,
 }
 
-impl<T: Copy> Buffer<T> {
+impl<T: Copy> Image<T> {
     pub fn new(width: u32, height: u32, color: T) -> Result<Self, IncorrectData> {
         let capacity = width as usize * height as usize;
         if let None = capacity.checked_mul(std::mem::size_of::<T>()) {
@@ -104,7 +104,7 @@ impl<T: Copy> Buffer<T> {
     }
 }
 
-impl<T: Copy> Deref for Buffer<T> {
+impl<T: Copy> Deref for Image<T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -112,7 +112,7 @@ impl<T: Copy> Deref for Buffer<T> {
     }
 }
 
-impl<T: Copy, I: SliceIndex<[T]>> Index<I> for Buffer<T> {
+impl<T: Copy, I: SliceIndex<[T]>> Index<I> for Image<T> {
     type Output = I::Output;
 
     fn index(&self, index: I) -> &Self::Output {
@@ -120,13 +120,13 @@ impl<T: Copy, I: SliceIndex<[T]>> Index<I> for Buffer<T> {
     }
 }
 
-impl<T: Copy, I: SliceIndex<[T]>> IndexMut<I> for Buffer<T> {
+impl<T: Copy, I: SliceIndex<[T]>> IndexMut<I> for Image<T> {
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         &mut self.buffer[index]
     }
 }
 
-impl<T: Copy> ComponentsRaw for Buffer<RGB<T>> {
+impl<T: Copy> ComponentsRaw for Image<RGB<T>> {
     type Output = T;
 
     fn raw(&self) -> &[Self::Output] {
@@ -162,14 +162,14 @@ macro_rules! from {
     }};
 
     ($s:ty, $f:ty) => {
-        impl From<Buffer<$f>> for Buffer<$s> {
-            fn from(src: Buffer<$f>) -> Self {
+        impl From<Image<$f>> for Image<$s> {
+            fn from(src: Image<$f>) -> Self {
                 from!(src)
             }
         }
 
-        impl From<&Buffer<$f>> for Buffer<$s> {
-            fn from(src: &Buffer<$f>) -> Self {
+        impl From<&Image<$f>> for Image<$s> {
+            fn from(src: &Image<$f>) -> Self {
                 from!(src)
             }
         }
@@ -199,7 +199,7 @@ mod tests {
         let capacity = width as usize * height as usize;
         let color = RGB8::from([255, 255, 255]);
 
-        let buffer = Buffer::new(width, height, color).unwrap();
+        let buffer = Image::new(width, height, color).unwrap();
 
         assert_eq!(buffer.len(), capacity);
         assert_eq!(buffer.width() as usize * buffer.height() as usize, capacity);
@@ -214,7 +214,7 @@ mod tests {
         let height: u32 = u32::MAX;
         let color = RGB8::from([255, 255, 255]);
 
-        let buffer = Buffer::new(width, height, color);
+        let buffer = Image::new(width, height, color);
         assert!(buffer.is_err());
 
         if let Err(e) = buffer {
@@ -232,7 +232,7 @@ mod tests {
         let capacity = width as usize * height as usize;
         let color = RGB8::from([255, 255, 255]);
 
-        let buffer = Buffer::from_vec(width, height, vec![color; capacity]).unwrap();
+        let buffer = Image::from_vec(width, height, vec![color; capacity]).unwrap();
 
         assert_eq!(buffer.len(), capacity);
         assert_eq!(buffer.width() as usize * buffer.height() as usize, capacity);
@@ -247,7 +247,7 @@ mod tests {
         let height: u32 = 15;
         let capacity = width as usize * height as usize;
         let color = RGB8::from([255, 255, 255]);
-        let mut buffer = Buffer::new(width, height, color).unwrap();
+        let mut buffer = Image::new(width, height, color).unwrap();
 
         assert_eq!(buffer[..].len(), capacity);
 
@@ -265,8 +265,8 @@ mod tests {
         let canals = std::mem::size_of::<RGB<T>>();
         assert_eq!(canals, 3);
 
-        let buff: Buffer<RGB<T>> =
-            Buffer::new(width, height, RGB8::from([color, color, color])).unwrap();
+        let buff: Image<RGB<T>> =
+            Image::new(width, height, RGB8::from([color, color, color])).unwrap();
 
         let raw: &[T] = buff.raw();
         assert_eq!(raw.len(), width as usize * height as usize * canals);
@@ -284,8 +284,8 @@ mod tests {
         let color = 0_f64;
         let canals = 3;
 
-        let buff: Buffer<RGB<T>> =
-            Buffer::new(width, height, RGB::from([color, color, color])).unwrap();
+        let buff: Image<RGB<T>> =
+            Image::new(width, height, RGB::from([color, color, color])).unwrap();
 
         let raw: Vec<T> = buff.raw_into_vec();
         assert_eq!(raw.len(), width as usize * height as usize * canals);
@@ -299,7 +299,7 @@ mod tests {
     fn index2d() {
         let width: u32 = 600;
         let height: u32 = 600;
-        let img: Buffer<RGB8> = Buffer::new(width, height, RGB8::from([0, 0, 0])).unwrap();
+        let img: Image<RGB8> = Image::new(width, height, RGB8::from([0, 0, 0])).unwrap();
 
         let index = img.index2d_to_index(0, 0);
         assert_eq!(index, 0);
@@ -326,7 +326,7 @@ mod tests {
     fn rotate90_square() {
         let width: u32 = 20;
         let height: u32 = 20;
-        let mut img: Buffer<RGB8> = Buffer::new(width, height, RGB8::from([0, 0, 0])).unwrap();
+        let mut img: Image<RGB8> = Image::new(width, height, RGB8::from([0, 0, 0])).unwrap();
         let color = RGB8::from([255, 0, 0]);
         img[0] = color;
         assert_eq!(img[0], color);
@@ -346,7 +346,7 @@ mod tests {
 
     #[test]
     fn rotate90() {
-        let mut img: Buffer<RGB8> = Buffer::new(450, 20, RGB8::from([255, 255, 255])).unwrap();
+        let mut img: Image<RGB8> = Image::new(450, 20, RGB8::from([255, 255, 255])).unwrap();
         let color = RGB8::from([0, 255, 0]);
         img[0] = color;
         assert_eq!(img[0], color);
@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn flip_vertically() {
-        let mut buffer: Buffer<RGB8> = Buffer::new(21, 21, RGB8::from([0, 0, 0])).unwrap();
+        let mut buffer: Image<RGB8> = Image::new(21, 21, RGB8::from([0, 0, 0])).unwrap();
         let color1 = RGB8::from([255, 0, 0]);
         let color2 = RGB8::from([0, 255, 0]);
         let color3 = RGB8::from([0, 0, 255]);
@@ -402,7 +402,7 @@ mod tests {
 
     #[test]
     fn flip_horizontally() {
-        let mut buffer: Buffer<RGB8> = Buffer::new(43, 43, RGB8::from([0, 0, 0])).unwrap();
+        let mut buffer: Image<RGB8> = Image::new(43, 43, RGB8::from([0, 0, 0])).unwrap();
         let color1 = RGB8::from([255, 0, 0]);
         let color2 = RGB8::from([0, 255, 0]);
         let color3 = RGB8::from([0, 0, 255]);

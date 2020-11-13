@@ -1,6 +1,6 @@
-mod buffer;
+mod image;
 
-pub use self::buffer::Buffer;
+pub use self::image::Image;
 
 pub trait ComponentsRaw {
     type Output;

@@ -1,7 +1,7 @@
 use num::complex::Complex;
 use sight::{
     color::RGB8,
-    display::{Buffer, ComponentsRaw},
+    display::{ComponentsRaw, Image},
 };
 
 fn mandelbrot_red_black(x: u32, y: u32, width: u32, height: u32) -> RGB8 {
@@ -29,7 +29,7 @@ fn main() {
     let width: u32 = 571;
     let height: u32 = 600;
 
-    let mut img: Buffer<RGB8> = Buffer::new(width, height, RGB8::from([255, 0, 0])).unwrap();
+    let mut img: Image<RGB8> = Image::new(width, height, RGB8::from([255, 0, 0])).unwrap();
 
     for y in 0..height {
         for x in 0..width {
