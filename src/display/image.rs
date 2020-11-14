@@ -1,6 +1,6 @@
 use super::ComponentsRaw;
 use crate::{
-    color::{rgb::RGB, HSL, RGB32, RGB64, RGB8},
+    color::{bgr::BGR, rgb::RGB},
     error::IncorrectData,
     math::{
         index2d_to_index, index_to_index2d,
@@ -53,6 +53,10 @@ impl<T: Copy> Image<T> {
             height,
             buffer,
         })
+    }
+
+    pub fn as_vec(self) -> Vec<T> {
+        self.buffer
     }
 
     #[inline]
@@ -126,71 +130,54 @@ impl<T: Copy, I: SliceIndex<[T]>> IndexMut<I> for Image<T> {
     }
 }
 
-impl<T: Copy> ComponentsRaw for Image<RGB<T>> {
-    type Output = T;
+impl<T: Copy> IntoIterator for Image<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
 
-    fn raw(&self) -> &[Self::Output] {
-        let ptr = self.buffer.as_ptr();
-        let len = self.buffer.len() * 3;
-        unsafe { slice::from_raw_parts(ptr as *const _, len) }
-    }
-
-    fn raw_into_vec(mut self) -> Vec<Self::Output> {
-        let ptr = self.buffer.as_mut_ptr();
-        let len = self.buffer.len() * 3;
-        let cap = self.buffer.capacity() * 3;
-        std::mem::forget(self.buffer);
-        unsafe { Vec::from_raw_parts(ptr as *mut _, len, cap) }
+    fn into_iter(self) -> Self::IntoIter {
+        self.buffer.into_iter()
     }
 }
 
-macro_rules! from {
-    ($s:ident) => {{
-        let width: u32 = $s.width();
-        let height: u32 = $s.height();
-        let len: usize = width as usize * height as usize;
-        assert_eq!(len, $s.buffer.len());
-        let mut buffer = Vec::with_capacity(len);
-        for x in $s.buffer.iter() {
-            buffer.push(x.clone().into());
-        }
-        Self {
-            width,
-            height,
-            buffer,
-        }
-    }};
-
-    ($s:ty, $f:ty) => {
-        impl From<Image<$f>> for Image<$s> {
-            fn from(src: Image<$f>) -> Self {
-                from!(src)
+macro_rules! components_raw_impl {
+    ($s:tt) => {
+        impl<T: Copy> ComponentsRaw for Image<$s<T>> {
+            type Output = T;
+            fn raw(&self) -> &[Self::Output] {
+                let ptr = self.buffer.as_ptr();
+                let len = self.buffer.len() * 3;
+                unsafe { slice::from_raw_parts(ptr as *const _, len) }
             }
-        }
-
-        impl From<&Image<$f>> for Image<$s> {
-            fn from(src: &Image<$f>) -> Self {
-                from!(src)
+            fn raw_into_vec(mut self) -> Vec<Self::Output> {
+                let ptr = self.buffer.as_mut_ptr();
+                let len = self.buffer.len() * 3;
+                let cap = self.buffer.capacity() * 3;
+                std::mem::forget(self.buffer);
+                unsafe { Vec::from_raw_parts(ptr as *mut _, len, cap) }
             }
         }
     };
 }
 
-from!(RGB8, RGB32);
-from!(RGB8, RGB64);
-from!(RGB8, HSL);
+components_raw_impl!(RGB);
+components_raw_impl!(BGR);
 
-from!(RGB32, RGB8);
-from!(RGB32, RGB64);
-from!(RGB32, HSL);
+impl<T: Copy + Into<F>, F: Copy> Into<Vec<F>> for Image<T> {
+    fn into(self) -> Vec<F> {
+        self.buffer.into_iter().map(|x| x.into()).collect()
+    }
+}
 
-from!(RGB64, RGB8);
-from!(RGB64, RGB32);
-from!(RGB64, HSL);
+impl<T: Copy + Into<F>, F: Copy> Into<Vec<F>> for &Image<T> {
+    fn into(self) -> Vec<F> {
+        self.buffer.iter().map(|x| x.clone().into()).collect()
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::color::RGB8;
 
     #[test]
     fn new() {

@@ -26,15 +26,12 @@ fn mandelbrot_red_black(x: u32, y: u32, width: u32, height: u32) -> RGB8 {
 }
 
 fn main() {
-    let width: u32 = 571;
-    let height: u32 = 600;
+    let mut img: Image<RGB8> = Image::new(571, 600, RGB8::from([255, 0, 0])).unwrap();
 
-    let mut img: Image<RGB8> = Image::new(width, height, RGB8::from([255, 0, 0])).unwrap();
-
-    for y in 0..height {
-        for x in 0..width {
+    for y in 0..img.height() {
+        for x in 0..img.width() {
             let index = img.index2d_to_index(x, y);
-            img[index] = mandelbrot_red_black(x, y, width, height);
+            img[index] = mandelbrot_red_black(x, y, img.width(), img.height());
         }
     }
 

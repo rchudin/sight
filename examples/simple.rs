@@ -15,7 +15,9 @@ fn main() {
             buff.push(HSL { h, s: 1.0, l: 0.5 })
         }
     }
-    let img: Image<RGB8> = Image::from_vec(width, height, buff).unwrap().into();
+
+    let img: Image<HSL> = Image::from_vec(width, height, buff).unwrap();
+    let img: Image<RGB8> = Image::from_vec(img.width(), img.height(), img.into()).unwrap();
 
     image::save_buffer_with_format(
         "tmp.png",

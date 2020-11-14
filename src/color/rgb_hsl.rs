@@ -1,7 +1,6 @@
 use super::{HSL, RGB64};
 
-pub(crate) fn rgb_to_hsl(rgb: RGB64) -> HSL {
-    let (r, g, b) = (rgb.r, rgb.g, rgb.b);
+pub(crate) fn rgb_to_hsl(r: f64, g: f64, b: f64) -> HSL {
     debug_assert!(r >= 0_f64 && r <= 1_f64);
     debug_assert!(g >= 0_f64 && g <= 1_f64);
     debug_assert!(b >= 0_f64 && b <= 1_f64);
@@ -116,7 +115,7 @@ mod tests {
                         RGB64::byte_to_percent64(b),
                     ]);
 
-                    let hsl = rgb_to_hsl(rgb);
+                    let hsl = rgb_to_hsl(rgb.r, rgb.g, rgb.b);
                     let rgb2 = hsl_to_rgb(hsl);
 
                     let rgb = (r, g, b);
