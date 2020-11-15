@@ -9,6 +9,12 @@ pub use rgb::{RGB32, RGB64, RGB8};
 mod hsl;
 pub use hsl::HSL;
 
+pub trait ComponentsCount {
+    type Component;
+
+    fn count() -> usize;
+}
+
 pub trait Convert {
     fn from_rgb8(_: RGB8) -> Self;
 

@@ -1,6 +1,6 @@
 use super::ComponentsRaw;
 use crate::{
-    color::{bgr::BGR, rgb::RGB},
+    color::ComponentsCount,
     error::IncorrectData,
     math::{index2d_to_index, index_to_index2d},
 };
@@ -97,34 +97,28 @@ impl<T: Copy, I: SliceIndex<[T]>> IndexMut<I> for Buffer<T> {
     }
 }
 
-macro_rules! components3_raw_impl {
-    ( $( $s:tt ),* ) => {
-        $(
-            impl<T: Copy> ComponentsRaw for Buffer<$s<T>> {
-                type Output = T;
-                fn raw(&self) -> &[Self::Output] {
-                    let ptr = self.data.as_ptr();
-                    let len = self.data.len() * 3;
-                    unsafe { slice::from_raw_parts(ptr as *const _, len) }
-                }
-                fn raw_into_vec(mut self) -> Vec<Self::Output> {
-                    let ptr = self.data.as_mut_ptr();
-                    let len = self.data.len() * 3;
-                    let cap = self.data.capacity() * 3;
-                    std::mem::forget(self.data);
-                    unsafe { Vec::from_raw_parts(ptr as *mut _, len, cap) }
-                }
-            }
-        )*
-    };
-}
+impl<T: Copy + ComponentsCount> ComponentsRaw for Buffer<T> {
+    type Output = <T as ComponentsCount>::Component;
 
-components3_raw_impl!(RGB, BGR);
+    fn raw(&self) -> &[Self::Output] {
+        let ptr = self.data.as_ptr();
+        let len = self.data.len() * T::count();
+        unsafe { slice::from_raw_parts(ptr as *const _, len) }
+    }
+
+    fn raw_into_vec(mut self) -> Vec<Self::Output> {
+        let ptr = self.data.as_mut_ptr();
+        let len = self.data.len() * T::count();
+        let cap = self.data.capacity() * T::count();
+        std::mem::forget(self.data);
+        unsafe { Vec::from_raw_parts(ptr as *mut _, len, cap) }
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::color::RGB8;
+    use crate::color::{rgb::RGB, RGB8};
 
     #[test]
     fn new() {

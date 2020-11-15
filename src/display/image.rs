@@ -1,6 +1,5 @@
 use super::{Buffer, ComponentsRaw};
 use crate::{
-    color::{bgr::BGR, rgb::RGB},
     error::IncorrectData,
     math::transpose::{transpose, transpose_square},
 };
@@ -111,23 +110,22 @@ impl<T: Copy, I: SliceIndex<[T]>> IndexMut<I> for Image<T> {
     }
 }
 
-macro_rules! components_raw_impl {
-    ( $( $s:tt ),* ) => {
-        $(
-            impl<T: Copy> ComponentsRaw for Image<$s<T>> {
-                type Output = T;
-                fn raw(&self) -> &[Self::Output] {
-                    self.buffer.raw()
-                }
-                fn raw_into_vec(self) -> Vec<Self::Output> {
-                    self.buffer.raw_into_vec()
-                }
-            }
-        )*
-    };
-}
+impl<T: Copy> ComponentsRaw for Image<T>
+where
+    Buffer<T>: ComponentsRaw,
+{
+    type Output = <Buffer<T> as ComponentsRaw>::Output;
 
-components_raw_impl!(RGB, BGR);
+    #[inline]
+    fn raw(&self) -> &[Self::Output] {
+        self.buffer.raw()
+    }
+
+    #[inline]
+    fn raw_into_vec(self) -> Vec<Self::Output> {
+        self.buffer.raw_into_vec()
+    }
+}
 
 impl<T: Copy + Into<F>, F: Copy> Into<Vec<F>> for Image<T> {
     fn into(self) -> Vec<F> {

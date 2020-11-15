@@ -2,6 +2,8 @@ mod bgr32;
 mod bgr64;
 mod bgr8;
 
+use super::ComponentsCount;
+
 pub type BGR8 = BGR<u8>;
 pub type BGR32 = BGR<f32>;
 pub type BGR64 = BGR<f64>;
@@ -32,6 +34,14 @@ impl<T> BGR<T> {
 
     pub fn byte_to_percent64(byte: u8) -> f64 {
         byte as f64 / 255_f64
+    }
+}
+
+impl<T> ComponentsCount for BGR<T> {
+    type Component = T;
+
+    fn count() -> usize {
+        3
     }
 }
 
