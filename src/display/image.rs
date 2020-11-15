@@ -1,108 +1,80 @@
-use super::ComponentsRaw;
+use super::{Buffer, ComponentsRaw};
 use crate::{
     color::{bgr::BGR, rgb::RGB},
     error::IncorrectData,
-    math::{
-        index2d_to_index, index_to_index2d,
-        transpose::{transpose, transpose_square},
-    },
+    math::transpose::{transpose, transpose_square},
 };
 use std::{
     ops::{Deref, Index, IndexMut},
-    slice,
     slice::SliceIndex,
 };
 
 pub struct Image<T: Copy> {
-    width: u32,
-    height: u32,
-    buffer: Vec<T>,
+    buffer: Buffer<T>,
 }
 
 impl<T: Copy> Image<T> {
     pub fn new(width: u32, height: u32, color: T) -> Result<Self, IncorrectData> {
-        let capacity = width as usize * height as usize;
-        if let None = capacity.checked_mul(std::mem::size_of::<T>()) {
-            return Err(IncorrectData::Overflow);
+        match Buffer::new(width, height, color) {
+            Ok(buffer) => Ok(Self { buffer }),
+            Err(e) => Err(e),
         }
-        if capacity > isize::MAX as usize {
-            return Err(IncorrectData::Overflow);
-        }
-
-        Ok(Self {
-            width,
-            height,
-            buffer: vec![color; capacity],
-        })
     }
 
-    pub fn from_vec(width: u32, height: u32, buffer: Vec<T>) -> Result<Self, IncorrectData> {
-        let expected = width as usize * height as usize;
-
-        let got = buffer.len();
-        if expected != got {
-            return Err(IncorrectData::Size { expected, got });
+    pub fn from_vec(width: u32, height: u32, data: Vec<T>) -> Result<Self, IncorrectData> {
+        match Buffer::from_vec(width, height, data) {
+            Ok(buffer) => Ok(Self { buffer }),
+            Err(e) => Err(e),
         }
-
-        if got > isize::MAX as usize {
-            return Err(IncorrectData::Overflow);
-        }
-
-        Ok(Self {
-            width,
-            height,
-            buffer,
-        })
     }
 
+    #[inline]
     pub fn as_vec(self) -> Vec<T> {
-        self.buffer
+        self.buffer.data
     }
 
     #[inline]
     pub fn width(&self) -> u32 {
-        self.width
+        self.buffer.width
     }
 
     #[inline]
     pub fn height(&self) -> u32 {
-        self.height
+        self.buffer.height
     }
 
     #[inline]
     pub fn index2d_to_index(&self, x: u32, y: u32) -> usize {
-        debug_assert!(x < self.width);
-        debug_assert!(y < self.height);
-        index2d_to_index(self.width, x, y)
+        self.buffer.index2d_to_index(x, y)
     }
 
     #[inline]
     pub fn index_to_index2d(&self, index: usize) -> (u32, u32) {
-        debug_assert!(index < self.buffer.len());
-        index_to_index2d(self.width, index)
+        self.buffer.index_to_index2d(index)
     }
 
     #[inline]
     pub fn flip_vertically(&mut self) {
-        for x in 0..self.height {
-            let first = index2d_to_index(self.width, 0, x);
-            self.buffer[first..first + self.width as usize].reverse()
+        for y in 0..self.buffer.height {
+            let first = self.index2d_to_index(0, y);
+            let width = self.buffer.width as usize;
+            self.buffer[first..first + width].reverse()
         }
     }
 
     #[inline]
     pub fn flip_horizontally(&mut self) {
-        self.buffer.reverse();
+        self.buffer.data.reverse();
         self.flip_vertically();
     }
 
     #[inline]
     pub fn rotate90(&mut self) {
-        if self.width == self.height {
-            transpose_square(self.width, &mut self.buffer)
+        if self.buffer.width == self.buffer.height {
+            transpose_square(self.buffer.width, &mut self.buffer.data)
         } else {
-            transpose(self.width, self.height, &mut self.buffer);
-            std::mem::swap(&mut self.width, &mut self.height);
+            transpose(self.buffer.width, self.buffer.height, &mut self.buffer.data);
+            std::mem::swap(&mut self.buffer.width, &mut self.buffer.height);
         }
         self.flip_vertically();
     }
@@ -113,6 +85,15 @@ impl<T: Copy> Deref for Image<T> {
 
     fn deref(&self) -> &Self::Target {
         self.buffer.deref()
+    }
+}
+
+impl<T: Copy> IntoIterator for Image<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.buffer.into_iter()
     }
 }
 
@@ -130,37 +111,23 @@ impl<T: Copy, I: SliceIndex<[T]>> IndexMut<I> for Image<T> {
     }
 }
 
-impl<T: Copy> IntoIterator for Image<T> {
-    type Item = T;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.buffer.into_iter()
-    }
-}
-
 macro_rules! components_raw_impl {
-    ($s:tt) => {
-        impl<T: Copy> ComponentsRaw for Image<$s<T>> {
-            type Output = T;
-            fn raw(&self) -> &[Self::Output] {
-                let ptr = self.buffer.as_ptr();
-                let len = self.buffer.len() * 3;
-                unsafe { slice::from_raw_parts(ptr as *const _, len) }
+    ( $( $s:tt ),* ) => {
+        $(
+            impl<T: Copy> ComponentsRaw for Image<$s<T>> {
+                type Output = T;
+                fn raw(&self) -> &[Self::Output] {
+                    self.buffer.raw()
+                }
+                fn raw_into_vec(self) -> Vec<Self::Output> {
+                    self.buffer.raw_into_vec()
+                }
             }
-            fn raw_into_vec(mut self) -> Vec<Self::Output> {
-                let ptr = self.buffer.as_mut_ptr();
-                let len = self.buffer.len() * 3;
-                let cap = self.buffer.capacity() * 3;
-                std::mem::forget(self.buffer);
-                unsafe { Vec::from_raw_parts(ptr as *mut _, len, cap) }
-            }
-        }
+        )*
     };
 }
 
-components_raw_impl!(RGB);
-components_raw_impl!(BGR);
+components_raw_impl!(RGB, BGR);
 
 impl<T: Copy + Into<F>, F: Copy> Into<Vec<F>> for Image<T> {
     fn into(self) -> Vec<F> {
@@ -177,137 +144,7 @@ impl<T: Copy + Into<F>, F: Copy> Into<Vec<F>> for &Image<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::color::RGB8;
-
-    #[test]
-    fn new() {
-        let width: u32 = 20;
-        let height: u32 = 20;
-        let capacity = width as usize * height as usize;
-        let color = RGB8::from([255, 255, 255]);
-
-        let buffer = Image::new(width, height, color).unwrap();
-
-        assert_eq!(buffer.len(), capacity);
-        assert_eq!(buffer.width() as usize * buffer.height() as usize, capacity);
-        for x in buffer.iter() {
-            assert_eq!(x, &color);
-        }
-    }
-
-    #[test]
-    fn new_overflow() {
-        let width: u32 = u32::MAX;
-        let height: u32 = u32::MAX;
-        let color = RGB8::from([255, 255, 255]);
-
-        let buffer = Image::new(width, height, color);
-        assert!(buffer.is_err());
-
-        if let Err(e) = buffer {
-            match e {
-                IncorrectData::Overflow => assert!(true),
-                _ => assert!(false),
-            }
-        }
-    }
-
-    #[test]
-    fn from_vec() {
-        let width: u32 = 10;
-        let height: u32 = 5;
-        let capacity = width as usize * height as usize;
-        let color = RGB8::from([255, 255, 255]);
-
-        let buffer = Image::from_vec(width, height, vec![color; capacity]).unwrap();
-
-        assert_eq!(buffer.len(), capacity);
-        assert_eq!(buffer.width() as usize * buffer.height() as usize, capacity);
-        for x in buffer.iter() {
-            assert_eq!(x, &color);
-        }
-    }
-
-    #[test]
-    fn slice_index() {
-        let width: u32 = 7;
-        let height: u32 = 15;
-        let capacity = width as usize * height as usize;
-        let color = RGB8::from([255, 255, 255]);
-        let mut buffer = Image::new(width, height, color).unwrap();
-
-        assert_eq!(buffer[..].len(), capacity);
-
-        let color = RGB8::from([0, 0, 255]);
-        buffer[0] = color;
-        assert_eq!(buffer[0], color);
-    }
-
-    #[test]
-    fn rgb_raw() {
-        type T = u8;
-        let width: u32 = 200;
-        let height: u32 = 200;
-        let color = 0;
-        let canals = std::mem::size_of::<RGB<T>>();
-        assert_eq!(canals, 3);
-
-        let buff: Image<RGB<T>> =
-            Image::new(width, height, RGB8::from([color, color, color])).unwrap();
-
-        let raw: &[T] = buff.raw();
-        assert_eq!(raw.len(), width as usize * height as usize * canals);
-
-        for x in raw {
-            assert!((*x) == color);
-        }
-    }
-
-    #[test]
-    fn rgb_raw_into_vec() {
-        type T = f64;
-        let width: u32 = 121;
-        let height: u32 = 121;
-        let color = 0_f64;
-        let canals = 3;
-
-        let buff: Image<RGB<T>> =
-            Image::new(width, height, RGB::from([color, color, color])).unwrap();
-
-        let raw: Vec<T> = buff.raw_into_vec();
-        assert_eq!(raw.len(), width as usize * height as usize * canals);
-
-        for x in raw {
-            assert!(x == color);
-        }
-    }
-
-    #[test]
-    fn index2d() {
-        let width: u32 = 600;
-        let height: u32 = 600;
-        let img: Image<RGB8> = Image::new(width, height, RGB8::from([0, 0, 0])).unwrap();
-
-        let index = img.index2d_to_index(0, 0);
-        assert_eq!(index, 0);
-        let (x, y) = img.index_to_index2d(index);
-        assert_eq!((x, y), (0, 0));
-
-        let index = img.index2d_to_index(width - 1, 0);
-        assert_eq!(index, width as usize - 1);
-        let (x, y) = img.index_to_index2d(index);
-        assert_eq!((x, y), (width - 1, 0));
-
-        let index = img.index2d_to_index(0, height - 1);
-        assert_eq!(index, (height - 1) as usize * height as usize);
-        let (x, y) = img.index_to_index2d(index);
-        assert_eq!((x, y), (0, height - 1));
-
-        let index = img.index2d_to_index(599, 599);
-        assert_eq!(index, img.buffer.len() - 1);
-        let (x, y) = img.index_to_index2d(index);
-        assert_eq!((x, y), (599, 599));
-    }
+    use crate::{color::RGB8, math::index2d_to_index};
 
     #[test]
     fn rotate90_square() {
