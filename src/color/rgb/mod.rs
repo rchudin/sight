@@ -40,7 +40,7 @@ impl<T> RGB<T> {
 impl<T> ComponentsCount for RGB<T> {
     type Component = T;
 
-    fn count() -> usize {
+    fn components_count() -> usize {
         3
     }
 }

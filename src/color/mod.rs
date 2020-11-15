@@ -12,7 +12,7 @@ pub use hsl::HSL;
 pub trait ComponentsCount {
     type Component;
 
-    fn count() -> usize;
+    fn components_count() -> usize;
 }
 
 pub trait Convert {

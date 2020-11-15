@@ -102,14 +102,14 @@ impl<T: Copy + ComponentsCount> ComponentsRaw for Buffer<T> {
 
     fn raw(&self) -> &[Self::Output] {
         let ptr = self.data.as_ptr();
-        let len = self.data.len() * T::count();
+        let len = self.data.len() * T::components_count();
         unsafe { slice::from_raw_parts(ptr as *const _, len) }
     }
 
     fn raw_into_vec(mut self) -> Vec<Self::Output> {
         let ptr = self.data.as_mut_ptr();
-        let len = self.data.len() * T::count();
-        let cap = self.data.capacity() * T::count();
+        let len = self.data.len() * T::components_count();
+        let cap = self.data.capacity() * T::components_count();
         std::mem::forget(self.data);
         unsafe { Vec::from_raw_parts(ptr as *mut _, len, cap) }
     }

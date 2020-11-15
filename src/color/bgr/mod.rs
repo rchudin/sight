@@ -40,7 +40,7 @@ impl<T> BGR<T> {
 impl<T> ComponentsCount for BGR<T> {
     type Component = T;
 
-    fn count() -> usize {
+    fn components_count() -> usize {
         3
     }
 }

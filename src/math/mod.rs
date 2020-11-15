@@ -1,4 +1,7 @@
 pub(crate) mod transpose;
+mod vec3;
+
+pub use vec3::Vec3;
 
 /// index = side * y + x
 #[inline]
