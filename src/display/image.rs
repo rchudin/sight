@@ -1,4 +1,4 @@
-use super::{Buffer, ComponentsRaw};
+use super::{Buffer, ComponentsRaw, Frame};
 use crate::{
     error::IncorrectData,
     math::transpose::{transpose, transpose_square},
@@ -33,31 +33,9 @@ impl<T: Copy> Image<T> {
     }
 
     #[inline]
-    pub fn width(&self) -> u32 {
-        self.buffer.width
-    }
-
-    #[inline]
-    pub fn height(&self) -> u32 {
-        self.buffer.height
-    }
-
-    #[inline]
-    pub fn index2d_to_index(&self, x: u32, y: u32) -> usize {
-        self.buffer.index2d_to_index(x, y)
-    }
-
-    #[inline]
-    pub fn index_to_index2d(&self, index: usize) -> (u32, u32) {
-        self.buffer.index_to_index2d(index)
-    }
-
-    #[inline]
     pub fn flip_vertically(&mut self) {
         for y in 0..self.buffer.height {
-            let first = self.index2d_to_index(0, y);
-            let width = self.buffer.width as usize;
-            self.buffer[first..first + width].reverse()
+            self.buffer.row_mut(y).reverse()
         }
     }
 
@@ -76,6 +54,40 @@ impl<T: Copy> Image<T> {
             std::mem::swap(&mut self.buffer.width, &mut self.buffer.height);
         }
         self.flip_vertically();
+    }
+}
+
+impl<T: Copy> Frame for Image<T> {
+    type Pixel = T;
+
+    #[inline]
+    fn width(&self) -> u32 {
+        self.buffer.width()
+    }
+
+    #[inline]
+    fn height(&self) -> u32 {
+        self.buffer.height()
+    }
+
+    #[inline]
+    fn pixel(&self, x: u32, y: u32) -> &Self::Pixel {
+        self.buffer.pixel(x, y)
+    }
+
+    #[inline]
+    fn pixel_mut(&mut self, x: u32, y: u32) -> &mut Self::Pixel {
+        self.buffer.pixel_mut(x, y)
+    }
+
+    #[inline]
+    fn row(&self, row: u32) -> &[Self::Pixel] {
+        self.buffer.row(row)
+    }
+
+    #[inline]
+    fn row_mut(&mut self, row: u32) -> &mut [Self::Pixel] {
+        self.buffer.row_mut(row)
     }
 }
 

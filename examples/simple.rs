@@ -1,6 +1,6 @@
 use sight::{
     color::{HSL, RGB8},
-    display::{ComponentsRaw, Image},
+    display::{ComponentsRaw, Frame, Image},
 };
 
 fn main() {

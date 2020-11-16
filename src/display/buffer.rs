@@ -1,9 +1,5 @@
-use super::ComponentsRaw;
-use crate::{
-    color::ComponentsCount,
-    error::IncorrectData,
-    math::{index2d_to_index, index_to_index2d},
-};
+use super::{ComponentsRaw, Frame};
+use crate::{color::ComponentsCount, error::IncorrectData, math::index2d_to_index};
 use std::{
     ops::{Deref, Index, IndexMut},
     slice,
@@ -51,18 +47,46 @@ impl<T: Copy> Buffer<T> {
             data,
         })
     }
+}
 
+impl<T: Copy> Frame for Buffer<T> {
+    type Pixel = T;
     #[inline]
-    pub fn index2d_to_index(&self, x: u32, y: u32) -> usize {
-        debug_assert!(x < self.width);
-        debug_assert!(y < self.height);
-        index2d_to_index(self.width, x, y)
+    fn width(&self) -> u32 {
+        self.width
     }
 
     #[inline]
-    pub fn index_to_index2d(&self, index: usize) -> (u32, u32) {
-        debug_assert!(index < self.data.len());
-        index_to_index2d(self.width, index)
+    fn height(&self) -> u32 {
+        self.height
+    }
+
+    #[inline]
+    fn pixel(&self, x: u32, y: u32) -> &Self::Pixel {
+        debug_assert!(x < self.width);
+        debug_assert!(y < self.height);
+        &self.data[index2d_to_index(self.width, x, y)]
+    }
+
+    #[inline]
+    fn pixel_mut(&mut self, x: u32, y: u32) -> &mut Self::Pixel {
+        debug_assert!(x < self.width);
+        debug_assert!(y < self.height);
+        &mut self.data[index2d_to_index(self.width, x, y)]
+    }
+
+    #[inline]
+    fn row(&self, row: u32) -> &[Self::Pixel] {
+        debug_assert!(row < self.height);
+        let start = self.width as usize * row as usize;
+        &self.data[start..start + self.width as usize]
+    }
+
+    #[inline]
+    fn row_mut(&mut self, row: u32) -> &mut [Self::Pixel] {
+        debug_assert!(row < self.height);
+        let start = self.width as usize * row as usize;
+        &mut self.data[start..start + self.width as usize]
     }
 }
 
@@ -170,30 +194,53 @@ mod tests {
     }
 
     #[test]
-    fn index2d() {
-        let width: u32 = 600;
-        let height: u32 = 600;
-        let img: Buffer<RGB8> = Buffer::new(width, height, RGB8::from([0, 0, 0])).unwrap();
+    fn width_and_height() {
+        let width: u32 = 5;
+        let height: u32 = 10;
+        let buffer = Buffer::new(width, height, RGB8::from([255, 255, 255])).unwrap();
+        assert_eq!(width, buffer.width());
+        assert_eq!(height, buffer.height());
+    }
 
-        let index = img.index2d_to_index(0, 0);
-        assert_eq!(index, 0);
-        let (x, y) = img.index_to_index2d(index);
-        assert_eq!((x, y), (0, 0));
+    #[test]
+    fn pixel() {
+        let color = RGB8::from([255, 255, 255]);
+        let mut buffer = Buffer::new(45, 45, color).unwrap();
+        assert_eq!(*buffer.pixel(1, 1), color);
+        assert_eq!(
+            *buffer.pixel(1, 1),
+            buffer[index2d_to_index(buffer.width, 1, 1)]
+        );
 
-        let index = img.index2d_to_index(width - 1, 0);
-        assert_eq!(index, width as usize - 1);
-        let (x, y) = img.index_to_index2d(index);
-        assert_eq!((x, y), (width - 1, 0));
+        let color = RGB8::from([0, 0, 0]);
+        *buffer.pixel_mut(0, 0) = color;
+        assert_eq!(*buffer.pixel(0, 0), color);
+        assert_eq!(
+            *buffer.pixel(0, 0),
+            buffer[index2d_to_index(buffer.width, 0, 0)]
+        );
 
-        let index = img.index2d_to_index(0, height - 1);
-        assert_eq!(index, (height - 1) as usize * height as usize);
-        let (x, y) = img.index_to_index2d(index);
-        assert_eq!((x, y), (0, height - 1));
+        let color = RGB8::from([0, 255, 0]);
+        *buffer.pixel_mut(buffer.width() - 1, buffer.height() - 1) = color;
+        assert_eq!(
+            buffer.pixel(buffer.width() - 1, buffer.height() - 1),
+            &color
+        );
+        assert_eq!(
+            *buffer.pixel(buffer.height() - 1, buffer.height() - 1),
+            buffer[index2d_to_index(buffer.width, buffer.width() - 1, buffer.height() - 1)]
+        );
+    }
 
-        let index = img.index2d_to_index(599, 599);
-        assert_eq!(index, img.data.len() - 1);
-        let (x, y) = img.index_to_index2d(index);
-        assert_eq!((x, y), (599, 599));
+    #[test]
+    fn row() {
+        let mut buffer = Buffer::new(45, 45, RGB8::from([255, 255, 255])).unwrap();
+
+        let row = buffer.row(0);
+        assert_eq!(row.len() as u32, buffer.height());
+
+        let row = buffer.row_mut(buffer.height() - 1);
+        assert_eq!(row.len() as u32, buffer.height());
     }
 
     #[test]
