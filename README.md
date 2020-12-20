@@ -5,3 +5,7 @@
 
 
 ![mandelbrot](examples/screenshots/mandelbrot.png)
+
+
+
+![triangle](examples/screenshots/triangle.png)

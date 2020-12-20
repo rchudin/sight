@@ -60,17 +60,26 @@ fn triangle_interpolation<T: Frame<Pixel = RGB8>>(
 
     for y in left_top.y..=right_bottom.y {
         for x in left_top.x..=right_bottom.x {
-            let bc_screen = barycentric(points[0], points[1], points[2], Vec2 { x, y });
-            if bc_screen.x < 0.0 || bc_screen.y < 0.0 || bc_screen.z < 0.0 {
+            let bc = barycentric(points[0], points[1], points[2], Vec2 { x, y });
+            if bc.x < 0.0 || bc.y < 0.0 || bc.z < 0.0 {
                 continue;
             }
 
-            let color = colors[0];
-
-            // let color = ((colors[0] * bc_screen.x as u8)
-            //     + (colors[1] * bc_screen.y as u8)
-            //     + (colors[0] * bc_screen.z as u8))
-            //     / (bc_screen.x + bc_screen.y + bc_screen.z) as u8;
+            let d = bc.x + bc.y + bc.z;
+            let color = RGB8 {
+                r: ((colors[0].r as f32 * bc.x
+                    + colors[1].r as f32 * bc.y
+                    + colors[2].r as f32 * bc.z)
+                    / d) as u8,
+                g: ((colors[0].g as f32 * bc.x
+                    + colors[1].g as f32 * bc.y
+                    + colors[2].g as f32 * bc.z)
+                    / d) as u8,
+                b: ((colors[0].b as f32 * bc.x
+                    + colors[1].b as f32 * bc.y
+                    + colors[2].b as f32 * bc.z)
+                    / d) as u8,
+            };
 
             *frame.pixel_mut(x as u32, y as u32) = color;
         }
@@ -78,20 +87,21 @@ fn triangle_interpolation<T: Frame<Pixel = RGB8>>(
 }
 
 fn main() {
-    let mut img: Image<RGB8> = Image::new(600, 600, RGB8::from([0, 0, 0])).unwrap();
+    let mut img: Image<RGB8> = Image::new(599, 599, RGB8::from([0, 0, 0])).unwrap();
 
+    let padding = (img.width() as f32 * 0.05).min(img.height() as f32 * 0.05) as u32;
     let points: [Vec2<i32>; 3] = [
         Vec2 {
             x: (img.width() / 2) as i32,
-            y: 0,
+            y: padding as i32,
         },
         Vec2 {
-            x: 0,
-            y: (img.height() - 1) as i32,
+            x: (img.width() - padding - 1) as i32,
+            y: (img.height() - padding - 1) as i32,
         },
         Vec2 {
-            x: (img.width() - 1) as i32,
-            y: (img.height() - 1) as i32,
+            x: padding as i32,
+            y: (img.height() - padding - 1) as i32,
         },
     ];
 
