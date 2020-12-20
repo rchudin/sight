@@ -8,13 +8,13 @@ macro_rules! vec2_min_max {
     ($($t:ty),*) => {
         $(
             impl Vec2<$t> {
-                pub fn min(&self, oth: &Self) -> Self {
+                pub fn min(self, oth: Self) -> Self {
                     Self {
                         x: self.x.min(oth.x),
                         y: self.y.min(oth.y),
                     }
                 }
-                pub fn max(&self, oth: &Self) -> Self {
+                pub fn max(self, oth: Self) -> Self {
                     Self {
                         x: self.x.max(oth.x),
                         y: self.y.max(oth.y),
@@ -35,14 +35,29 @@ mod tests {
     fn min() {
         let a: Vec2<u8> = Vec2 { x: 0, y: 0 };
         let b: Vec2<u8> = Vec2 { x: 0, y: 0 };
-        assert_eq!(a.min(&b), Vec2 { x: 0_u8, y: 0_u8 });
+        assert_eq!(a.min(b), Vec2 { x: 0_u8, y: 0_u8 });
 
         let a: Vec2<i32> = Vec2 { x: 100, y: 0 };
         let b: Vec2<i32> = Vec2 { x: 3, y: 1000 };
-        assert_eq!(a.min(&b), Vec2 { x: 3_i32, y: 0_i32 });
+        assert_eq!(a.min(b), Vec2 { x: 3_i32, y: 0_i32 });
 
         let a: Vec2<f64> = Vec2 { x: 0.0, y: -45.0 };
         let b: Vec2<f64> = Vec2 { x: 25.0, y: 41.0 };
-        assert_eq!(a.min(&b), Vec2 { x: 0.0, y: -45.0 });
+        assert_eq!(a.min(b), Vec2 { x: 0.0, y: -45.0 });
+    }
+
+    #[test]
+    fn max() {
+        let a: Vec2<u8> = Vec2 { x: 0, y: 0 };
+        let b: Vec2<u8> = Vec2 { x: 0, y: 0 };
+        assert_eq!(a.max(b), Vec2 { x: 0_u8, y: 0_u8 });
+
+        let a: Vec2<i32> = Vec2 { x: 100, y: 0 };
+        let b: Vec2<i32> = Vec2 { x: 3, y: 54 };
+        assert_eq!(a.max(b), Vec2 { x: 100, y: 54 });
+
+        let a: Vec2<f64> = Vec2 { x: 0.0, y: -45.0 };
+        let b: Vec2<f64> = Vec2 { x: 25.0, y: 41.0 };
+        assert_eq!(a.max(b), Vec2 { x: 25.0, y: 41.0 });
     }
 }
