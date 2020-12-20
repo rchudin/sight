@@ -3,6 +3,7 @@ mod rgb64;
 mod rgb8;
 
 use super::ComponentsCount;
+use std::ops::Mul;
 
 pub type RGB8 = RGB<u8>;
 pub type RGB32 = RGB<f32>;
@@ -10,7 +11,7 @@ pub type RGB64 = RGB<f64>;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-pub struct RGB<T> {
+pub struct RGB<T: Copy> {
     /// Red
     pub r: T,
     /// Green
@@ -19,7 +20,22 @@ pub struct RGB<T> {
     pub b: T,
 }
 
-impl<T> RGB<T> {
+impl<T, M> Mul<M> for RGB<T>
+where
+    T: Copy + Mul<M, Output = T>,
+    M: Copy,
+{
+    type Output = Self;
+    fn mul(self, rhs: M) -> Self::Output {
+        Self::Output {
+            r: self.r * rhs,
+            g: self.g * rhs,
+            b: self.b * rhs,
+        }
+    }
+}
+
+impl<T: Copy> RGB<T> {
     pub fn percent32_to_byte(percent: f32) -> u8 {
         (percent * 255_f32).round() as u8
     }
@@ -37,7 +53,7 @@ impl<T> RGB<T> {
     }
 }
 
-impl<T> ComponentsCount for RGB<T> {
+impl<T: Copy> ComponentsCount for RGB<T> {
     type Component = T;
 
     fn components_count() -> usize {
@@ -58,6 +74,29 @@ impl<T: Copy> From<[T; 3]> for RGB<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mul() {
+        let rgb: RGB<u8> = RGB { r: 0, g: 0, b: 0 };
+        assert_eq!(rgb.mul(7), RGB { r: 0, g: 0, b: 0 });
+
+        let rgb: RGB<u8> = RGB { r: 0, g: 2, b: 4 };
+        assert_eq!(rgb.mul(2), RGB { r: 0, g: 4, b: 8 });
+
+        let rgb: RGB<f64> = RGB {
+            r: 5.0,
+            g: 2.0,
+            b: 1.0,
+        };
+        assert_eq!(
+            rgb.mul(5.0),
+            RGB {
+                r: 25.0,
+                g: 10.0,
+                b: 5.0
+            }
+        );
+    }
 
     #[test]
     fn percent32_to_byte() {
