@@ -12,10 +12,10 @@ fn main() {
         md5::compute("name").0
     };
 
-    let mut img: Image<RGB8> = Image::new(144, 144, RGB8::from([210, 210, 210])).unwrap();
+    let mut img: Image<RGB8> = Image::new(144, 144, RGB8::from([219, 219, 219])).unwrap();
 
     let buffer: [u8; 9] = name[0..9].try_into().unwrap();
-    let mut color: [u8; 3] = name[9..9 + 3].try_into().unwrap();
+    let mut color: [u8; 3] = [name[9], name[10], name[11]];
 
     for i in 0..3 {
         color[i] = (color[i] as f32 * 0.8) as u8;
@@ -35,7 +35,10 @@ fn main() {
 }
 
 fn draw<T: Copy>(image: &mut Image<T>, bytes: [u8; 9], color: T) {
+    // 12 * (12 / 2) = 72
+    // 9byte * 8bit = 72
     const NEED_MATRIX: usize = 12;
+
     let image_width = image.width() as usize;
     let block_width = image_width / NEED_MATRIX;
     let block_height = image.height() as usize / NEED_MATRIX;
